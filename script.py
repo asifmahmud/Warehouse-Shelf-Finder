@@ -72,7 +72,7 @@ class ShelfFinder:
                 (p.row, p.col) == (end[0]+1, end[1])):
                 
                 print("Distance is: {}".format(p.dist))
-                return p.dist
+                return p.dist+1
             
             if (p.row - 1 >= 0 and visited[p.row - 1][p.col] == False):
                 q.put(self.QItem(p.row-1, p.col, p.dist + 1))
