@@ -68,7 +68,9 @@ class ShelfFinder:
         while (not q.empty()):
             p = q.get()
 
-            if ((p.row, p.col) == end):
+            if ((p.row, p.col) == (end[0]-1, end[1]) or 
+                (p.row, p.col) == (end[0]+1, end[1])):
+                
                 print("Distance is: {}".format(p.dist))
                 return p.dist
             
