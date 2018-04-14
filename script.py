@@ -44,52 +44,111 @@ class ShelfFinder:
         print(dist)
 
 
-    class QItem:
-        def __init__(self, row, col, dist):
-            self.row = row
-            self.col = col
-            self.dist = dist
-
-
-    def minDistance(self, start, end):
-        source = self.QItem(start[0], start[1], 0)
-        visited = [[0 for x in range(self.xMax+1)] for y in range(self.yMax+1)]
-
-        for i in range(self.yMax):
-            for j in range(self.xMax):
-                if (self.grid[i][j] == 1):
-                    visited[i][j] = True
-                else:
-                    visited[i][j] = False
-        
-        q = queue.Queue()
-        q.put(source)
-        visited[source.row][source.col] = True
-        while (not q.empty()):
-            p = q.get()
-
-            if ((p.row, p.col) == end):
-                print("Distance is: {}".format(p.dist))
-                return p.dist
+    def findRoute(self, start, end):
+        currentPos = start
+        x,y = end
+        distance = 0
+        while True:
+            if currentPos == (x-1,y) or currentPos == (x+1,y): break
             
-            if (p.row - 1 >= 0 and visited[p.row - 1][p.col] == False):
-                q.put(self.QItem(p.row-1, p.col, p.dist + 1))
-                visited[p.row-1][p.col] = True
+            xCor, yCor = currentPos
+            if xCor < x-1 and yCor <= y:
+                if      (self._canMove(currentPos, 'RIGHT')):   currentPos = self.moveRight(currentPos)
+                elif    (self._canMove(currentPos, 'UP')):      currentPos = self.moveUp(currentPos)
+                else:   currentPos = self._findNextEmpty(currentPos)
+                distance += 1
+                continue
 
-            if (p.row + 1 < self.yMax and visited[p.row + 1][p.col] == False):
-                q.put(self.QItem(p.row + 1, p.col, p.dist + 1))
-                visited[p.row + 1][p.col] = True
+            elif xCor > x+1 and yCor >= y:
+                if      (self._canMove(currentPos, 'DOWN')):    currentPos = self.moveDown(currentPos)
+                elif    (self._canMove(currentPos, 'LEFT')):    currentPos = self.moveLeft(currentPos)
+                else:   currentPos = self._findNextEmpty(currentPos)
+                distance += 1
+                continue
+
+            elif xCor < x-1 and yCor >= y:
+                if      (self._canMove(currentPos, 'RIGHT')):   currentPos = self.moveRight(currentPos)
+                elif    (self._canMove(currentPos, 'DOWN')):    currentPos = self.moveDown(currentPos)
+                else:   currentPos = self._findNextEmpty(currentPos)
+                distance += 1
+                continue
+
+            elif xCor > x+1 and yCor <= y:
+                if      (self._canMove(currentPos, 'LEFT')):    currentPos = self.moveLeft(currentPos)
+                elif    (self._canMove(currentPos, 'UP')):      currentPos = self.moveUp(currentPos)
+                else:   currentPos = self._findNextEmpty(currentPos)
+                distance += 1
+                continue
+
+            elif (xCor == x-1 or xCor == x+1):
+                if (yCor < y):
+                    if  (self._canMove(currentPos, 'UP')):      currentPos = self.moveUp(currentPos)
+                    else:   currentPos = self._findNextEmpty(currentPos)
+                elif (yCor > y):
+                    if  (self._canMove(currentPos,'DOWN')):     currentPos = self.moveDown(currentPos)
+                    else:   currentPos = self._findNextEmpty(currentPos)
+                distance += 1
+                continue 
+
+            elif (xCor == x):
+                if      (self._canMove(currentPos, 'LEFT')):    currentPos = self.moveLeft(currentPos)
+                elif    (self._canMove(currentPos, 'RIGHT')):   currentPos = self.moveRight(currentPos)
+                else:   currentPos = self._findNextEmpty(currentPos)
+                distance += 1
+                continue
+        
+        distance += 1
+        #self.printStats(distance)
+        return distance
+        
+        
+        
+        
+    def _findNextEmpty(self, currentPos):
+        switcher = {
+            'RIGHT':    self.moveRight, 
+            'LEFT':     self.moveLeft, 
+            'UP':       self.moveUp, 
+            'DOWN':     self.moveDown
+        }
+        
+        x = currentPos
+        while(currentPos == x):
+            choice = random.choice([k for k in switcher.keys()])
+            if self._canMove(currentPos, choice): 
+                currentPos = switcher[choice](currentPos)
+            else:
+                switcher.pop(choice)
+        return currentPos
+
     
-            if (p.col - 1 >= 0 and visited[p.row][p.col - 1] == False):
-                q.put(self.QItem(p.row, p.col - 1, p.dist + 1))
-                visited[p.row][p.col - 1] = True
-            
-            if (p.col + 1 < self.xMax and visited[p.row][p.col + 1] == False):
-                q.put(self.QItem(p.row, p.col + 1, p.dist + 1))
-                visited[p.row][p.col + 1] = True
+    def _canMove(self, currentPos, choice):
+        xCor, yCor = currentPos
+
+        if   (choice == 'RIGHT'):
+            if self.grid[yCor][xCor+1] or xCor+1 > self.xMax:	return False
+        elif (choice == 'LEFT'):
+            if self.grid[yCor][xCor-1] or xCor-1 < 0: 			return False
+        elif (choice == 'UP'):
+            if self.grid[yCor+1][xCor] or yCor+1 > self.yMax: 	return False
+        elif (choice == 'DOWN'):
+            if self.grid[yCor-1][xCor] or yCor-1 < 0: 			return False
         
-        print("Distance is: {}".format(-1))
-        return -1
+        return True
+        
+        
+        
+    def moveUp(self, currentPos):
+        return (currentPos[0], currentPos[1] + 1)
+    
+    def moveDown(self, currentPos):
+        return (currentPos[0], currentPos[1] - 1)
+    
+    def moveLeft(self, currentPos):
+        return (currentPos[0] - 1, currentPos[1])
+    
+    def moveRight(self, currentPos):
+        return (currentPos[0] + 1, currentPos[1])
 
 
 
@@ -137,7 +196,7 @@ def main(argv):
     order = [int(i) for i in order.split(",")]
 
     finder = ShelfFinder(startLocation, endLocation, order, orderFile)
-    finder.minDistance(startLocation, (10,15))
+    #finder.minDistance(startLocation, (10,15))
     #finder.optimumOrder()
     return 0
 
