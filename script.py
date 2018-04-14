@@ -40,66 +40,8 @@ class ShelfFinder:
     def optimumOrder(self):
         dist = dict()
         for order in self.order:
-            dist[order] = (self.findRoute(self.start, self.orderBook[order]))
+            dist[order] = (self.minDistance(self.start, self.orderBook[order]))
         print(dist)
-
-
-    def findRoute(self, start, end):
-        currentPos = start
-        x,y = end
-        distance = 0
-        while True:
-            if currentPos == (x-1,y) or currentPos == (x+1,y): break
-            
-            xCor, yCor = currentPos
-            if xCor < x-1 and yCor <= y:
-                if      (self._canMove(currentPos, 'RIGHT')):   currentPos = self.moveRight(currentPos)
-                elif    (self._canMove(currentPos, 'UP')):      currentPos = self.moveUp(currentPos)
-                else:   currentPos = self._findNextEmpty(currentPos)
-                distance += 1
-                continue
-
-            elif xCor > x+1 and yCor >= y:
-                if      (self._canMove(currentPos, 'DOWN')):    currentPos = self.moveDown(currentPos)
-                elif    (self._canMove(currentPos, 'LEFT')):    currentPos = self.moveLeft(currentPos)
-                else:   currentPos = self._findNextEmpty(currentPos)
-                distance += 1
-                continue
-
-            elif xCor < x-1 and yCor >= y:
-                if      (self._canMove(currentPos, 'RIGHT')):   currentPos = self.moveRight(currentPos)
-                elif    (self._canMove(currentPos, 'DOWN')):    currentPos = self.moveDown(currentPos)
-                else:   currentPos = self._findNextEmpty(currentPos)
-                distance += 1
-                continue
-
-            elif xCor > x+1 and yCor <= y:
-                if      (self._canMove(currentPos, 'LEFT')):    currentPos = self.moveLeft(currentPos)
-                elif    (self._canMove(currentPos, 'UP')):      currentPos = self.moveUp(currentPos)
-                else:   currentPos = self._findNextEmpty(currentPos)
-                distance += 1
-                continue
-
-            elif (xCor == x-1 or xCor == x+1):
-                if (yCor < y):
-                    if  (self._canMove(currentPos, 'UP')):      currentPos = self.moveUp(currentPos)
-                    else:   currentPos = self._findNextEmpty(currentPos)
-                elif (yCor > y):
-                    if  (self._canMove(currentPos,'DOWN')):     currentPos = self.moveDown(currentPos)
-                    else:   currentPos = self._findNextEmpty(currentPos)
-                distance += 1
-                continue 
-
-            elif (xCor == x):
-                if      (self._canMove(currentPos, 'LEFT')):    currentPos = self.moveLeft(currentPos)
-                elif    (self._canMove(currentPos, 'RIGHT')):   currentPos = self.moveRight(currentPos)
-                else:   currentPos = self._findNextEmpty(currentPos)
-                distance += 1
-                continue
-        
-        distance += 1
-        #self.printStats(distance)
-        return distance
 
 
     class QItem:
@@ -149,38 +91,6 @@ class ShelfFinder:
         print("Distance is: {}".format(-1))
         return -1
 
-    
-    def _findNextEmpty(self, currentPos):
-        switcher = {
-            'RIGHT':    self.moveRight, 
-            'LEFT':     self.moveLeft, 
-            'UP':       self.moveUp, 
-            'DOWN':     self.moveDown
-        }
-        
-        x = currentPos
-        while(currentPos == x):
-            choice = random.choice([k for k in switcher.keys()])
-            if self._canMove(currentPos, choice): 
-                currentPos = switcher[choice](currentPos)
-            else:
-                switcher.pop(choice)
-        return currentPos
-
-    
-    def _canMove(self, currentPos, choice):
-        xCor, yCor = currentPos
-
-        if   (choice == 'RIGHT'):
-            if self.grid[yCor][xCor+1] or xCor+1 > self.xMax:	return False
-        elif (choice == 'LEFT'):
-            if self.grid[yCor][xCor-1] or xCor-1 < 0: 			return False
-        elif (choice == 'UP'):
-            if self.grid[yCor+1][xCor] or yCor+1 > self.yMax: 	return False
-        elif (choice == 'DOWN'):
-            if self.grid[yCor-1][xCor] or yCor-1 < 0: 			return False
-        
-        return True
 
 
     def printStats(self, distance):
@@ -216,20 +126,6 @@ class ShelfFinder:
         else:       
             print(self.grid[c[1]][c[0]])
 
-    
-    def moveUp(self, currentPos):
-        return (currentPos[0], currentPos[1] + 1)
-    
-    def moveDown(self, currentPos):
-        return (currentPos[0], currentPos[1] - 1)
-    
-    def moveLeft(self, currentPos):
-        return (currentPos[0] - 1, currentPos[1])
-    
-    def moveRight(self, currentPos):
-        return (currentPos[0] + 1, currentPos[1])
-
-
 
 def main(argv):
     startLocation   = (4,9)
@@ -241,7 +137,6 @@ def main(argv):
     order = [int(i) for i in order.split(",")]
 
     finder = ShelfFinder(startLocation, endLocation, order, orderFile)
-    #finder.findRoute(startLocation, (4,16))
     finder.minDistance(startLocation, (10,15))
     #finder.optimumOrder()
     return 0
