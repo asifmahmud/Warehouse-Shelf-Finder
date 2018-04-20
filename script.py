@@ -58,18 +58,18 @@ class ShelfFinder:
         (item, totalDist, loc) = self.findMinDistance(originDist[0])
         optimizedOrder.append(item)
         prevItem = item
-        '''
+
         print(order)
         print(originDist)
         print(dist)
-        '''
+        
         for i in range(len(dist.keys()) - 1):
             (item, d, loc) = self.findMinDistance(dist[prevItem])
             while(item in optimizedOrder):
-                #print(optimizedOrder)
-                #print("Old item: {}".format(item))
+                print(optimizedOrder)
+                print("Old item: {}".format(item))
                 (item, d, loc) = self.findMinDistance(dist[prevItem], duplicate=item)
-                #print("New Item: {}".format(item))
+                print("New Item: {}".format(item))
             prevItem = item
             totalDist += d
             optimizedOrder.append(item)
@@ -88,7 +88,7 @@ class ShelfFinder:
         minVal = float("inf")
         result = tuple()
         
-        if (duplicate != None):
+        if duplicate:
             for v in itemList:
                 if v[0] == duplicate: 
                     itemList.remove(v)
@@ -107,6 +107,7 @@ class ShelfFinder:
             (dist, loc) = self.findRoute(start, self.orderBook[i])
             totalDist += dist
             start = loc
+        
         totalDist += self.findRoute(start, self.end)[0] + 1
         return totalDist
 
@@ -115,8 +116,10 @@ class ShelfFinder:
         orderNo = 1
         outFile = open(self.outFile, 'w')
 
-        if (customOrder):
+        if customOrder:
             opt, dist = self.optimumOrder(customOrder)
+            print(self.originalDistance(customOrder))
+            print(dist)
             print("Here is your optimal picking order:")
             print(",".join([str(i) for i in opt]))
             return
@@ -145,7 +148,7 @@ class ShelfFinder:
                     output += str(optimalDist)
 
                     outFile.write(output)
-                    outFile.write("\n\n\n\n---------------------------------------------------------\n")
+                    outFile.write("\n\n---------------------------------------------------------\n\n")
                     orderNo += 1
                     line = orderFile.readline().strip().split('\t')
             
@@ -161,6 +164,8 @@ class ShelfFinder:
 
 
     def findRoute(self, start, end):
+        if (start == end): return 0, start
+
         source = self.QItem(start[0], start[1], 0)
         visited = [[0 for x in range(self.xMax+2)] for y in range(self.yMax+2)]
 
@@ -238,6 +243,7 @@ class ShelfFinder:
 
 
 def main(argv):
+    '''
     startLocation   = input("Hello user, where is your worker?: ")
     endLocation     = input("Where is your worker's end location?: ")
     order           = input("What items would you like to pick?: ")
@@ -248,14 +254,22 @@ def main(argv):
     startLocation = (int(startLocation[0]), int(startLocation[1]))
     endLocation = endLocation.strip("()").split(",")
     endLocation = (int(endLocation[0]), int(endLocation[1]))
+    '''
+    startLocation = (0,0)
+    endLocation = (0, 18)
+    orderFile = 'warehouse-orders-v01.csv'
+    orderOutputFile = 'output2.txt'
+
+    order = "1651829,2253198,1622191,1621045,1621158,1622196,1622195,1622191,1945580,1628756,1629090,2625541,2625537,1623864,1622038,1621964,1624694,1626710,1626709,1626718"
     order = [int(i) for i in order.strip().split(",")]
-    
     finder = ShelfFinder(startLocation, endLocation, orderFile, orderOutputFile)
     #finder.optimumOrder(order)
+    
     print("Please wait.....")
+    #print(",".join([str(i) for i in order]))
     if len(order) > 0:
         finder.batchOrder(order)
-    finder.batchOrder()
+    #finder.batchOrder()
     return 0
 
 
