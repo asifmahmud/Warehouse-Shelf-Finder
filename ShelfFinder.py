@@ -121,46 +121,46 @@ class ShelfFinder:
 
 
     def batchOrder(self, customOrder=None):
-        orderNo = 1
-        outFile = open(self.outFile, 'w')
-
         if customOrder:
             optimalDist, optimalOrder = self.optimizedOrder(customOrder)
             print("Here is your optimal picking order:")
             print(",".join([str(i) for i in optimalOrder]))
-            return
+        
+        else:
+            orderNo = 1
+            outFile = open(self.outFile, 'w')
 
-        with open(self.orderFile) as orderFile:
-            line = orderFile.readline().strip().split('\t')
-            try:
-                while( len(line) >= 1 ):
-                    print("Processing Order #{}".format(orderNo))
-                    order = [int(i) for i in line]
-                    originalDist = self.originalDistance(order)
-                    optimalDist, optimalOrder = self.optimizedOrder(order)
-                    output = ''
-                    output += "##Order Number##\n"
-                    output += str(orderNo) + '\n'
-                    output += "##Worker Start Location##\n"
-                    output += str(self.start) + '\n'
-                    output += "##Worker End Location##\n"
-                    output += str(self.end) + '\n'
-                    output += "##Original Parts Order##\n"
-                    output += ','.join([str(i) for i in order]) + '\n'
-                    output += "##Optimized Parts Order##\n"
-                    output += ','.join([str(i) for i in optimalOrder]) + '\n'
-                    output += "##Original Parts Total Distance##\n"
-                    output += str(originalDist) + '\n'
-                    output += "##Optimized Parts Total Distance##\n"
-                    output += str(optimalDist)
+            with open(self.orderFile) as orderFile:
+                line = orderFile.readline().strip().split('\t')
+                try:
+                    while( len(line) >= 1 ):
+                        print("Processing Order #{}".format(orderNo))
+                        order = [int(i) for i in line]
+                        originalDist = self.originalDistance(order)
+                        optimalDist, optimalOrder = self.optimizedOrder(order)
+                        output = ''
+                        output += "##Order Number##\n"
+                        output += str(orderNo) + '\n'
+                        output += "##Worker Start Location##\n"
+                        output += str(self.start) + '\n'
+                        output += "##Worker End Location##\n"
+                        output += str(self.end) + '\n'
+                        output += "##Original Parts Order##\n"
+                        output += ','.join([str(i) for i in order]) + '\n'
+                        output += "##Optimized Parts Order##\n"
+                        output += ','.join([str(i) for i in optimalOrder]) + '\n'
+                        output += "##Original Parts Total Distance##\n"
+                        output += str(originalDist) + '\n'
+                        output += "##Optimized Parts Total Distance##\n"
+                        output += str(optimalDist)
 
-                    outFile.write(output)
-                    outFile.write("\n\n---------------------------------------------------------\n\n")
-                    orderNo += 1
-                    line = orderFile.readline().strip().split('\t')
-            
-            except ValueError:
-                print("Done!")
+                        outFile.write(output)
+                        outFile.write("\n\n---------------------------------------------------------\n\n")
+                        orderNo += 1
+                        line = orderFile.readline().strip().split('\t')
+                
+                except ValueError:
+                    print("Done!")
 
         
 
