@@ -1,9 +1,6 @@
 
 '''
 ------------------------------------
-University of California, Irvine
-EECS 221: Adv. App Algorithms
-
 Author: Asif Mahmud
 Date: 04/07/2018
 Updated: 04/22/2018
@@ -11,7 +8,15 @@ Updated: 04/22/2018
 '''
 
 from Distance import Distance
+from NearestNeighbor import NearestNeighbor
+
+import numpy as np
 import itertools
+import sys
+import time
+
+
+THRESHOLD = 19
 
 class ShelfFinder:
     def __init__(self, startLoc, endLoc, orderFile=None, outFile=None):
@@ -26,6 +31,7 @@ class ShelfFinder:
         self.grid           = [[0 for x in range(self.xMax+2)] for y in range(self.yMax+2)]
         self.orderBook[0]   = self.start
         self.orderBook[-1]  = self.end
+        
         
         with open(self.warehouse) as w:
             line = w.readline().strip('\n').split(',')
@@ -54,9 +60,23 @@ class ShelfFinder:
                 else:       
                     adj[i][j] = d.findRoute(self.orderBook[x], self.orderBook[y])[0]
 
-        cost,path = self.cost(adj)
+        # Calculate the original cost
+        origCost = 0
+        for i in range(len(adj)-1):
+            origCost += adj[i][i+1]
+
+        # if the number of items exceeds 13, calculate optimal
+        # order using Nearest Neighbor
+        if len(order)-2 > THRESHOLD:
+            n = NearestNeighbor(np.array(adj))
+            cost,path = n.findMinPath()
+        
+        else:
+            cost,path = self.cost(adj)
+        
         path = [adjList[i] for i in path]
-        return cost,path
+        
+        return origCost,cost,path
 
 
     def cost(self, dists):
@@ -125,7 +145,7 @@ class ShelfFinder:
         outFile = open(self.outFile, 'w')
 
         if customOrder:
-            optimalDist, optimalOrder = self.optimizedOrder(customOrder)
+            originalDist, optimalDist, optimalOrder = self.optimizedOrder(customOrder)
             print("Here is your optimal picking order:")
             print(",".join([str(i) for i in optimalOrder]))
             return
@@ -136,8 +156,9 @@ class ShelfFinder:
                 while( len(line) >= 1 ):
                     print("Processing Order #{}".format(orderNo))
                     order = [int(i) for i in line]
-                    originalDist = self.originalDistance(order)
-                    optimalDist, optimalOrder = self.optimizedOrder(order)
+                    t1 = time.time()
+                    originalDist, optimalDist, optimalOrder = self.optimizedOrder(order)
+                    t2 = time.time()
                     output = ''
                     output += "##Order Number##\n"
                     output += str(orderNo) + '\n'
@@ -152,7 +173,8 @@ class ShelfFinder:
                     output += "##Original Parts Total Distance##\n"
                     output += str(originalDist) + '\n'
                     output += "##Optimized Parts Total Distance##\n"
-                    output += str(optimalDist)
+                    output += str(optimalDist) + "\n"
+                    output += str("Time taken: {}".format(t2-t1))
 
                     outFile.write(output)
                     outFile.write("\n\n---------------------------------------------------------\n\n")
@@ -161,6 +183,7 @@ class ShelfFinder:
             
             except ValueError:
                 print("Done!")
+                outFile.close()
 
         
 
