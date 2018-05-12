@@ -1,4 +1,3 @@
-
 '''
 ------------------------------------
 Author: Asif Mahmud
@@ -9,23 +8,26 @@ Updated: 04/22/2018
 
 from Distance import Distance
 from NearestNeighbor import NearestNeighbor
+from BNB import BNB
+from LowerBound import LowerBound
 
 import numpy as np
 import itertools
 import sys
 import time
 
-
+INF = float("inf")
 THRESHOLD = 19
 
 class ShelfFinder:
-    def __init__(self, startLoc, endLoc, orderFile=None, outFile=None):
+    def __init__(self, startLoc, endLoc, alg, orderFile=None, outFile=None):
         self.warehouse  = 'warehouse-grid.csv'
         self.start      = startLoc
         self.end        = endLoc
         self.orderFile  = orderFile 
         self.outFile    = outFile
         self.orderBook  = {}
+        self.algorithm  = alg
         
         self.xMax,self.yMax = self.findRange()
         self.grid           = [[0 for x in range(self.xMax+2)] for y in range(self.yMax+2)]
@@ -56,7 +58,7 @@ class ShelfFinder:
         for i,x in enumerate(order):
             for j,y in enumerate(order):
                 if x == y:  
-                    adj[i][j] = 0
+                    adj[i][j] = INF
                 else:       
                     adj[i][j] = d.findRoute(self.orderBook[x], self.orderBook[y])[0]
 
@@ -65,17 +67,31 @@ class ShelfFinder:
         for i in range(len(adj)-1):
             origCost += adj[i][i+1]
 
-        # if the number of items exceeds 13, calculate optimal
-        # order using Nearest Neighbor
-        if len(order)-2 > THRESHOLD:
+        # Calculate lower bound
+        #lowerBound = LowerBound(adj).lbound()
+        #print("lower bound: {}".format(lowerBound))
+
+        #---------------------------------------#
+        #           Branch and Bound            #
+        #---------------------------------------#
+        if self.algorithm == 'bnb':
+            b = BNB(adj)
+            cost,path = b.optimalPath()
+
+        #---------------------------------------#
+        #           Nearest Neighbor            #
+        #---------------------------------------#
+        elif self.algorithm == "nn":  #elif len(order)-2 > THRESHOLD:
             n = NearestNeighbor(np.array(adj))
             cost,path = n.findMinPath()
         
+        #---------------------------------------#
+        #               Held-Karp               #
+        #---------------------------------------#
         else:
             cost,path = self.cost(adj)
         
         path = [adjList[i] for i in path]
-        
         return origCost,cost,path
 
 
@@ -154,7 +170,7 @@ class ShelfFinder:
             line = orderFile.readline().strip().split('\t')
             try:
                 while( len(line) >= 1 ):
-                    print("Processing Order #{}".format(orderNo))
+                    print(".", end='')
                     order = [int(i) for i in line]
                     t1 = time.time()
                     originalDist, optimalDist, optimalOrder = self.optimizedOrder(order)
@@ -171,9 +187,9 @@ class ShelfFinder:
                     output += "##Optimized Parts Order##\n"
                     output += ','.join([str(i) for i in optimalOrder]) + '\n'
                     output += "##Original Parts Total Distance##\n"
-                    output += str(originalDist) + '\n'
+                    output += str(int(originalDist)) + '\n'
                     output += "##Optimized Parts Total Distance##\n"
-                    output += str(optimalDist) + "\n"
+                    output += str(int(optimalDist)) + "\n"
                     output += str("Time taken: {}".format(t2-t1))
 
                     outFile.write(output)
