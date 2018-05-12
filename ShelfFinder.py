@@ -59,7 +59,7 @@ class ShelfFinder:
             for j,y in enumerate(order):
                 if x == y:  
                     adj[i][j] = INF
-                else:       
+                else:
                     adj[i][j] = d.findRoute(self.orderBook[x], self.orderBook[y])[0]
 
         # Calculate the original cost

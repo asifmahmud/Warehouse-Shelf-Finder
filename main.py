@@ -3,6 +3,7 @@ import time
 import sys
 
 def main():
+    '''
     startLocation   = input("Hello user, where is your worker?: ")
     endLocation     = input("Where is your worker's end location?: ")
     order           = input("What items would you like to pick?: ")
@@ -11,13 +12,12 @@ def main():
     algorithm       = input("Which algorithm should be used? ([bnb]: Branch and Bound, [nn]: Nearest Neighbor, [hk]: Held-Karp)")
     '''
     startLocation   = "(0,0)"
-    endLocation     = "(0,0)"
-    order           = "281610,342706,111873,198029,366109,287261,76283,254489,258540,286457"
+    endLocation     = "(0,18)"
+    order           = "108335,391825,340367,286457,661741"
     orderFile       = "warehouse-orders-v01.csv"
     orderOutputFile = "output2.txt"
-    algorithm       = "bnb" 
-    '''
-
+    algorithm       = "hk" 
+    
     startLocation   = startLocation.strip("()").split(",")
     startLocation   = (int(startLocation[0]), int(startLocation[1]))
     endLocation     = endLocation.strip("()").split(",")
@@ -25,7 +25,7 @@ def main():
 
     order = [int(i) for i in order.strip().split(",")]
     finder = ShelfFinder(startLocation, endLocation, algorithm, orderFile, orderOutputFile)
-    '''
+    
     t1 = time.time()
     a,b,c = finder.optimizedOrder(order)
     t2 = time.time()
@@ -35,6 +35,7 @@ def main():
     print("Please wait.....")
     if len(order) > 0: finder.batchOrder(order)
     finder.batchOrder()
+    '''
     return 0
 
 
