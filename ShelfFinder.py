@@ -2,7 +2,7 @@
 ------------------------------------
 Author: Asif Mahmud
 Date: 04/07/2018
-Updated: 04/22/2018
+Updated: 05/19/2018
 ------------------------------------
 '''
 
@@ -20,19 +20,22 @@ INF = float("inf")
 THRESHOLD = 19
 
 class ShelfFinder:
-    def __init__(self, startLoc, endLoc, alg, orderFile=None, outFile=None):
+    def __init__(self, startLoc, endLoc, alg, orderFile=None, outFile=None, weightFlag=False):
         self.warehouse  = 'warehouse-grid.csv'
+        self.itemInfo   = 'item-dimensions-tabbed.txt'
         self.start      = startLoc
         self.end        = endLoc
         self.orderFile  = orderFile 
         self.outFile    = outFile
-        self.orderBook  = {}
+        self.orderBook  = {0: self.start, -1: self.end}
+        self.weightInfo = {0: (0,0,0,0), -1: (0,0,0,0)}
         self.algorithm  = alg
+        self.weightFlag = weightFlag
         
         self.xMax,self.yMax = self.findRange()
         self.grid           = [[0 for x in range(self.xMax+2)] for y in range(self.yMax+2)]
-        self.orderBook[0]   = self.start
-        self.orderBook[-1]  = self.end
+        
+        self.invalidItem = False
         
         
         with open(self.warehouse) as w:
@@ -43,9 +46,34 @@ class ShelfFinder:
                 self.orderBook[k] = (i*2,j*2)
                 self.grid[i*2][j*2] = 1
                 line = w.readline().strip('\n').split(',')
+        
+
+        with open(self.itemInfo) as f:
+            next(f)
+            line = f.readline().strip('\n').split('\t')
+            while(len(line) > 1):
+                k, i, j, l, m = (   int(float(line[0])), 
+                                    float(line[2]), 
+                                    float(line[1]), 
+                                    float(line[3]), 
+                                    float(line[4])
+                                )
+
+                self.weightInfo[k] = (i, j, l, m)
+                line = f.readline().strip('\n').split('\t')
+
 
 
     def optimizedOrder(self, order):
+        self.checkInvalid(order)
+
+        # Remove duplicates from order
+        order = list(dict.fromkeys(order)) 
+
+        # Corner Case
+        if len(order) == 0:
+            return []
+
         order       = [0] + order + [-1]
         numNodes    = len(order)
         adj         = [[0 for i in range(numNodes)] for j in range(numNodes)]
@@ -54,6 +82,7 @@ class ShelfFinder:
 
         for i,j in enumerate(order): 
             adjList[i] = j
+
         
         for i,x in enumerate(order):
             for j,y in enumerate(order):
@@ -62,10 +91,16 @@ class ShelfFinder:
                 else:
                     adj[i][j] = d.findRoute(self.orderBook[x], self.orderBook[y])[0]
 
-        # Calculate the original cost
-        origCost = 0
+
+
+        # Calculate the original cost and effort
+        origCost, origEffort = 0, 0
+        weight = 0
         for i in range(len(adj)-1):
             origCost += adj[i][i+1]
+            weight += self.weightInfo[adjList[i]][3]
+            origEffort += weight * adj[i][i+1]
+        
 
         # Calculate lower bound
         #lowerBound = LowerBound(adj).lbound()
@@ -75,24 +110,41 @@ class ShelfFinder:
         #           Branch and Bound            #
         #---------------------------------------#
         if self.algorithm == 'bnb':
-            b = BNB(adj)
-            cost,path = b.optimalPath()
+            b = BNB(adj, self.weightInfo, adjList, adj)
+            cost,path,effort = b.optimalPath()
+
 
         #---------------------------------------#
         #           Nearest Neighbor            #
         #---------------------------------------#
-        elif self.algorithm == "nn":  #elif len(order)-2 > THRESHOLD:
-            n = NearestNeighbor(np.array(adj))
-            cost,path = n.findMinPath()
+        elif self.algorithm == 'nn': #elif len(order)-2 > THRESHOLD:
+            n = NearestNeighbor(np.array(adj), self.weightInfo, adjList)
+            cost,path,effort = n.findMinPath()
+
         
         #---------------------------------------#
         #               Held-Karp               #
         #---------------------------------------#
         else:
             cost,path = self.cost(adj)
+            
+            weight = 0
+            effort = 0
+            for i in range(len(path)-1):
+                weight += self.weightInfo[adjList[path[i]]][3]
+                effort += weight * adj[path[i]][path[i+1]]
+
+            weight += self.weightInfo[adjList[path[-1]]][3]
+            effort+= weight * adj[path[-1]][len(adj)-1]
+
+
+        if self.invalidItem:
+            print("Note: The effort output is missing some information")
+
         
         path = [adjList[i] for i in path]
-        return origCost,cost,path
+        return [origCost, origEffort, cost, path, effort]
+
 
 
     def cost(self, dists):
@@ -125,6 +177,7 @@ class ShelfFinder:
             res.append((C[(bits, k)][0] + dists[k][n], k))
         opt, parent = min(res)
 
+
         path = []
         for i in range(n - 1):
             path.append(parent)
@@ -134,6 +187,7 @@ class ShelfFinder:
 
         return opt, list(reversed(path))
             
+
                 
     def print2DList(self, l):
         for i in l:
@@ -142,55 +196,54 @@ class ShelfFinder:
             print('\n')
 
 
-    def originalDistance(self, order):
-        totalDist = 0
-        start = self.start
-        d = Distance(self.xMax, self.yMax, self.grid)
-        
-        for i in order:
-            (dist, loc) = d.findRoute(start, self.orderBook[i])
-            totalDist += dist
-            start = loc
-
-        totalDist += d.findRoute(start, self.end)[0] + 1
-        return totalDist
-
-
     def batchOrder(self, customOrder=None):
         orderNo = 1
         outFile = open(self.outFile, 'w')
+        finder = []
 
         if customOrder:
-            originalDist, optimalDist, optimalOrder = self.optimizedOrder(customOrder)
+            finder = self.optimizedOrder(customOrder)
             print("Here is your optimal picking order:")
-            print(",".join([str(i) for i in optimalOrder]))
+            print(",".join([str(i) for i in finder[3]]))
             return
 
         with open(self.orderFile) as orderFile:
             line = orderFile.readline().strip().split('\t')
             try:
                 while( len(line) >= 1 ):
-                    print(".", end='')
+                    print("Processing Order Number {}".format(orderNo))
                     order = [int(i) for i in line]
                     t1 = time.time()
-                    originalDist, optimalDist, optimalOrder = self.optimizedOrder(order)
+                    finder = self.optimizedOrder(order)
                     t2 = time.time()
+                    
                     output = ''
-                    output += "##Order Number##\n"
-                    output += str(orderNo) + '\n'
-                    output += "##Worker Start Location##\n"
-                    output += str(self.start) + '\n'
-                    output += "##Worker End Location##\n"
-                    output += str(self.end) + '\n'
-                    output += "##Original Parts Order##\n"
-                    output += ','.join([str(i) for i in order]) + '\n'
-                    output += "##Optimized Parts Order##\n"
-                    output += ','.join([str(i) for i in optimalOrder]) + '\n'
-                    output += "##Original Parts Total Distance##\n"
-                    output += str(int(originalDist)) + '\n'
-                    output += "##Optimized Parts Total Distance##\n"
-                    output += str(int(optimalDist)) + "\n"
-                    output += str("Time taken: {}".format(t2-t1))
+                    if len(finder) == 0:
+                        output += "Missing item information for this order\n"
+                    
+                    else:
+                        output += "##Order Number##\n"
+                        output += str(orderNo) + '\n'
+                        output += "##Worker Start Location##\n"
+                        output += str(self.start) + '\n'
+                        output += "##Worker End Location##\n"
+                        output += str(self.end) + '\n'
+                        output += "##Original Parts Order##\n"
+                        output += ','.join([str(i) for i in order]) + '\n'
+                        output += "##Optimized Parts Order##\n"
+                        output += ','.join([str(i) for i in finder[3]]) + '\n'
+                        output += "##Original Parts Total Distance##\n"
+                        output += str(int(finder[0])) + '\n'
+                        output += "##Optimized Parts Total Distance##\n"
+                        output += str(int(finder[2])) + "\n"
+                        output += str("Time taken: {}".format(t2-t1))
+
+                        if (self.weightFlag):
+                            output += "\n##Original Parts Total Effort##\n"
+                            output += str(int(finder[1])) + "\n"
+                            output += "##Optimal Parts Total Effort\n"
+                            output += str(int(finder[4]))
+
 
                     outFile.write(output)
                     outFile.write("\n\n---------------------------------------------------------\n\n")
@@ -201,7 +254,18 @@ class ShelfFinder:
                 print("Done!")
                 outFile.close()
 
-        
+
+    # Check invalid orders
+    def checkInvalid(self, order):
+        o = order[:]
+        for i in o:
+            try:
+                a = self.weightInfo[i]
+            except KeyError:
+                self.invalidItem = True
+                order.remove(i)
+        return order
+
 
     # Find the range of x and y-coordinates
     def findRange(self):

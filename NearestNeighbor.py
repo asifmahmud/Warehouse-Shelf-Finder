@@ -1,8 +1,10 @@
 import numpy as np
 
 class NearestNeighbor:
-    def __init__(self, graph):
+    def __init__(self, graph, weightInfo, adjList):
         self.graph = graph
+        self.weightInfo = weightInfo
+        self.adjList = adjList
 
     def NN(self, start):
         cutoff  = len(self.graph)-1
@@ -10,6 +12,8 @@ class NearestNeighbor:
 
         path    = [start]
         cost    = 0
+        effort  = 0 
+        weight  = 0
         N       = A.shape[0]
         mask    = np.ones(N, dtype=bool)   # boolean values indicating which 
                                         # locations have not been visited
@@ -22,18 +26,24 @@ class NearestNeighbor:
             path.append(next_loc)
             mask[next_loc] = False
             cost += A[last, next_loc]
-        
+            
+            weight += self.weightInfo[self.adjList[last]][3]
+            if next_loc != 0:
+                effort +=  weight * A[last, next_loc]
+                    
         cost += self.graph[next_loc, cutoff] 
-        return cost, path
+        effort += weight * self.graph[last, cutoff]
+
+        return cost, path, effort
 
 
     def findMinPath(self):
-        minPath, minCost = [], float("inf")
+        minPath, minCost, minEffort = [], float("inf"), float("inf")
         
         for i in range(len(self.graph)-1):
-            cost,path = self.NN(i)
+            cost,path,effort = self.NN(i)
             if cost < minCost:
-                minCost,minPath = cost,path
+                minCost,minPath, minEffort = cost,path,effort
         
         if minPath[0] != 0:
             res = []
@@ -47,7 +57,7 @@ class NearestNeighbor:
                     break
 
         minPath = minPath[1:]
-        return minCost, minPath
+        return minCost, minPath, minEffort
 
 '''
 A = [
