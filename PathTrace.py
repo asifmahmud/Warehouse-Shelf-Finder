@@ -32,6 +32,7 @@ class Settings():
         NUM_BLOCKS_Y = 0
 
 
+
 class RectangleWidget(QGraphicsWidget):
     def __init__(self, rect, path=False, item=False, parent=None):
         super(RectangleWidget, self).__init__(parent)
@@ -57,28 +58,30 @@ class QS(QtWidgets.QGraphicsScene):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        width = Settings.NUM_BLOCKS_X * Settings.WIDTH
-        height = Settings.NUM_BLOCKS_Y * Settings.HEIGHT
-        self.setSceneRect(0, 0, width, height)
+        width = Settings.NUM_BLOCKS_X *(Settings.WIDTH+1)
+        height = Settings.NUM_BLOCKS_Y * (Settings.HEIGHT+1)
+        self.setSceneRect(0, 0, height, width)
         self.setItemIndexMethod(QtWidgets.QGraphicsScene.NoIndex)
         
         layout = QGraphicsGridLayout()
-        layout.setGeometry(QRectF(0,0,width,height))
+        layout.setVerticalSpacing(0)
+        layout.setHorizontalSpacing(0)
+        
         form = QGraphicsWidget()
         form.setLayout(layout)
         
-        for i in range(8):
+        for i in range(Settings.NUM_BLOCKS_X):
             layout.setRowSpacing(i, 0)
-            layout.setRowMaximumHeight(i, 38)
-            for j in range(8):
+            layout.setRowMaximumHeight(i, Settings.HEIGHT)
+            for j in range(Settings.NUM_BLOCKS_Y):
                 layout.setColumnSpacing(j, 0)
-                layout.setColumnMaximumWidth(j, 38)
+                layout.setColumnMaximumWidth(j, Settings.WIDTH)
                 if j-i == 1:
-                    rect = RectangleWidget(QRectF(0,0,38,38), path=True)
+                    rect = RectangleWidget(QRectF(0,0,Settings.WIDTH,Settings.HEIGHT), path=True)
                 elif j-i == 3:
-                    rect = RectangleWidget(QRectF(0,0,38,38), item=True)
+                    rect = RectangleWidget(QRectF(0,0,Settings.WIDTH,Settings.HEIGHT), item=True)
                 else:
-                    rect = RectangleWidget(QRectF(0,0,38,38))
+                    rect = RectangleWidget(QRectF(0,0,Settings.WIDTH,Settings.HEIGHT))
 
                 layout.addItem(rect, i, j)
 
@@ -94,5 +97,5 @@ class QV(QtWidgets.QGraphicsView):
 
 
 if __name__ == '__main__':
-    PathTrace(40, 40, 8, 8)
+    PathTrace(25, 25, 18, 36)
 
