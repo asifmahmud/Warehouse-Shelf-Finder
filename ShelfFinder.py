@@ -197,33 +197,13 @@ class ShelfFinder:
 
 
     def batchOrder(self, customOrder=None):
-<<<<<<< HEAD
-=======
         orderNo = 1
         outFile = open(self.outFile, 'w')
         finder = []
 
->>>>>>> 5e01466926d9dca9dd05fe6dfd77dc839f167700
         if customOrder:
             finder = self.optimizedOrder(customOrder)
             print("Here is your optimal picking order:")
-<<<<<<< HEAD
-            print(",".join([str(i) for i in optimalOrder]))
-        
-        else:
-            orderNo = 1
-            outFile = open(self.outFile, 'w')
-
-            with open(self.orderFile) as orderFile:
-                line = orderFile.readline().strip().split('\t')
-                try:
-                    while( len(line) >= 1 ):
-                        print("Processing Order #{}".format(orderNo))
-                        order = [int(i) for i in line]
-                        originalDist = self.originalDistance(order)
-                        optimalDist, optimalOrder = self.optimizedOrder(order)
-                        output = ''
-=======
             print(",".join([str(i) for i in finder[3]]))
             return
 
@@ -242,7 +222,6 @@ class ShelfFinder:
                         output += "Missing item information for this order\n"
                     
                     else:
->>>>>>> 5e01466926d9dca9dd05fe6dfd77dc839f167700
                         output += "##Order Number##\n"
                         output += str(orderNo) + '\n'
                         output += "##Worker Start Location##\n"
@@ -252,21 +231,6 @@ class ShelfFinder:
                         output += "##Original Parts Order##\n"
                         output += ','.join([str(i) for i in order]) + '\n'
                         output += "##Optimized Parts Order##\n"
-<<<<<<< HEAD
-                        output += ','.join([str(i) for i in optimalOrder]) + '\n'
-                        output += "##Original Parts Total Distance##\n"
-                        output += str(originalDist) + '\n'
-                        output += "##Optimized Parts Total Distance##\n"
-                        output += str(optimalDist)
-
-                        outFile.write(output)
-                        outFile.write("\n\n---------------------------------------------------------\n\n")
-                        orderNo += 1
-                        line = orderFile.readline().strip().split('\t')
-                
-                except ValueError:
-                    print("Done!")
-=======
                         output += ','.join([str(i) for i in finder[3]]) + '\n'
                         output += "##Original Parts Total Distance##\n"
                         output += str(int(finder[0])) + '\n'
@@ -301,7 +265,6 @@ class ShelfFinder:
                 self.invalidItem = True
                 order.remove(i)
         return order
->>>>>>> 5e01466926d9dca9dd05fe6dfd77dc839f167700
 
 
     # Find the range of x and y-coordinates
